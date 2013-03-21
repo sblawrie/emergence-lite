@@ -1,0 +1,12 @@
+Options +FollowSymlinks
+Options -Indexes
+
+RewriteEngine On
+
+RewriteBase /
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . /Library/router.php [L,QSA]
+
+
+ErrorDocument 404 /Library/router.php
