@@ -1,4 +1,4 @@
-emergence
+emergence-lite
 =========
 
 Standalone Emergence Base
