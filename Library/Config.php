@@ -1,12 +1,12 @@
 <?php
 
 Site::$config = array(
-    /*'handle'               => 'akujin'
-    ,'primary_hostname'    => 'akuj.in'
+    /*'handle'               => 'xxx'
+    ,'primary_hostname'    => 'xxx'
     ,'hostnames'           => array()
-    ,'label'               => 'akujin'
-    ,'parent_hostname'     => 'skeleton.emr.ge'
-    ,'parent_key'          => '8U6kydil36bl3vlJ'
+    ,'label'               => 'xxx'
+    ,'parent_hostname'     => 'xxx'
+    ,'parent_key'          => 'xxx'
     //,'inheritance_key'
     ,*/'mysql'               => array(
         //'socket'    =>
