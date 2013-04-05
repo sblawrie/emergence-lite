@@ -165,7 +165,7 @@ class SQL
 
 '. "\t" . '// ActiveRecord configuration
 '. "\t" . 'static public $tableName = \'' . $tableName . '\';
-'. "\t" . 'static public $singularNoun = \'' . $className . '\';
+'. "\t" . 'static public $singularNoun = \'' . lcfirst($className) . '\';
 '. "\t" . 'static public $pluralNoun = \'' . $tableName . '\';
 
 '. "\t" . 'static public $rootClass = __CLASS__;
