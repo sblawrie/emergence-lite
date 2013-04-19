@@ -7,7 +7,7 @@
 
 	// Session configurables
 	static public $cookieName = 's';
-	static public $cookieDomain = '.cdeworld.com';
+	static public $cookieDomain = null;
 	static public $cookiePath = '/';
 	static public $cookieSecure = false;
 	static public $cookieExpires = false;
