@@ -5,7 +5,7 @@ abstract class RequestHandler
 	public static $responseMode = 'html';
 	
 	// abstract methods
-	abstract public static function handleRequest();
+	//abstract public static function handleRequest();
 	
 	// static properties
 	protected static $_path;
@@ -102,6 +102,45 @@ abstract class RequestHandler
 
 			default:
 				die('Invalid response mode');
+		}
+	}
+	
+	public static function autoRouteRequest($action)
+	{
+		if($action=='')
+		{
+			$action = 'home';
+		}
+		
+		//Check for dashes
+		$exp = explode('-', $action);
+		if(count($exp)>1)
+		{
+			foreach($exp as &$part)
+			{
+				$part = ucfirst($part);
+			}
+			$action = implode('', $exp);
+		}
+		
+		$methodName = 'handle' . ucfirst($action) . 'Request';
+		
+		if(method_exists(get_called_class(), $methodName))
+		{
+			return static::$methodName();
+		}
+		else
+		{
+			ErrorRequestHandler::handleRequest();
+		}
+	}
+	
+	public static function handleRequest()
+	{ 
+		switch($action = $action?$action:static::shiftPath())
+		{	
+			default:
+				static::autoRouteRequest($action);
 		}
 	}
 }
