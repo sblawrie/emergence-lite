@@ -105,11 +105,17 @@ abstract class RequestHandler
 		}
 	}
 	
-	public static function autoRouteRequest($action)
+	static public function autoRouteRequest($action)
 	{
 		if($action=='')
 		{
 			$action = 'home';
+		}
+		
+		if(ctype_digit($action))
+		{
+			$objectID = $action;
+			$action = 'Object';
 		}
 		
 		//Check for dashes
@@ -127,6 +133,10 @@ abstract class RequestHandler
 		
 		if(method_exists(get_called_class(), $methodName))
 		{
+			if($methodName=='handleObjectRequest')
+			{
+				return static::$methodName($objectID);
+			}
 			return static::$methodName();
 		}
 		else
