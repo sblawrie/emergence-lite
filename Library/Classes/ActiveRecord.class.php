@@ -1091,14 +1091,14 @@ class ActiveRecord
 		else
 		{
 	
-	        $field_array['type'] = $type;
-	  
-	        if($Column['EXTRA']=='auto_increment')
-	        {
-		        $field_array['autoincrement'] = true;
-	        }
-	        
-	        $fields[] = $field_array;
+		        $field_array['type'] = $type;
+		  
+		        if($Column['EXTRA']=='auto_increment')
+		        {
+			        $field_array['autoincrement'] = true;
+		        }
+		        
+		        $fields[$Column['COLUMN_NAME']] = $field_array;
 		}
 		
 	}
