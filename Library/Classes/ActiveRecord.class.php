@@ -1065,6 +1065,47 @@ class ActiveRecord
      */
     static protected function _defineFields()
     {
+    	//Gets fields from table on the fly
+    	$tableName = static::$tableName;
+	$sql = "SELECT `COLUMN_NAME`, `DATA_TYPE`, `COLUMN_KEY`, `EXTRA`
+			FROM `INFORMATION_SCHEMA`.`COLUMNS` 
+			WHERE `TABLE_SCHEMA`=(SELECT DATABASE()) 
+			AND `TABLE_NAME`='{$tableName}';";
+	$Columns = DB::allRecords($sql);
+	
+	$fields = array();
+	foreach($Columns as $Column)
+	{
+		$field_array = array();
+		if($Column['COLUMN_KEY']=='PRI' && $Column['COLUMN_NAME']!='ID')
+		{
+			static::$primaryKey = $Column['COLUMN_NAME'];
+		}
+		
+		$Map = array('varchar'=>'string', 'mediumtext'=>'string', 'text'=>'string', 'largetext'=>'text', 'int'=>'integer', 'date'=>'timestamp', 'datetime'=>'timestamp', 'float'=>'decimal', 'tinyint'=>'integer');
+		$type = (isset($Map[$Column['DATA_TYPE']]))?$Map[$Column['DATA_TYPE']]:$Column['DATA_TYPE'];
+		if($type=='string')
+		{
+			$fields[] = $Column['COLUMN_NAME'];
+		}
+		else
+		{
+	
+	        $field_array['type'] = $type;
+	  
+	        if($Column['EXTRA']=='auto_increment')
+	        {
+		        $field_array['autoincrement'] = true;
+	        }
+	        
+	        $fields[] = $field_array;
+		}
+		
+	}
+	
+	//merge fields from table with user-defined fields
+	static::$fields = array_merge($fields, static::$fields);
+		
         $className = get_called_class();
 
         // skip if fields already defined
