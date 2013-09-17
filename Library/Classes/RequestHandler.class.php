@@ -4,6 +4,7 @@ abstract class RequestHandler
 	
 	public static $responseMode = 'html';
 	public static $injectableData = array();
+	public static $routes;
 	
 	// abstract methods
 	//abstract public static function handleRequest();
@@ -107,35 +108,40 @@ abstract class RequestHandler
 	
 	static public function autoRouteRequest($action)
 	{
-		if($action=='')
+		if($action=='' || !$action)
 		{
-			$action = 'home';
+			static::callMethod('handleHomeRequest');
 		}
-		
-		if(ctype_digit($action))
+		else if(ctype_digit($action))
 		{
-			$objectID = $action;
-			$action = 'Object';
+			static::callMethod('handleObjectRequest', $action);
 		}
-		
-		//Check for dashes
-		$exp = explode('-', $action);
-		if(count($exp)>1)
+		else
 		{
-			foreach($exp as &$part)
+			//Check for dashes
+			$exp = explode('-', $action);
+			if(count($exp)>1)
 			{
-				$part = ucfirst($part);
+				foreach($exp as &$part)
+				{
+					$part = ucfirst($part);
+				}
+				$action = implode('', $exp);
 			}
-			$action = implode('', $exp);
+			
+			$methodName = 'handle' . ucfirst($action) . 'Request';
+		
+			static::callMethod($methodName);
 		}
-		
-		$methodName = 'handle' . ucfirst($action) . 'Request';
-		
+	}
+	
+	static public function callMethod($methodName, $params = null)
+	{
 		if(method_exists(get_called_class(), $methodName))
 		{
 			if($methodName=='handleObjectRequest')
 			{
-				return static::$methodName($objectID);
+				return static::$methodName($params);
 			}
 			return static::$methodName();
 		}
@@ -147,10 +153,16 @@ abstract class RequestHandler
 	
 	public static function handleRequest()
 	{ 
-		switch($action = $action?$action:static::shiftPath())
-		{	
-			default:
-				static::autoRouteRequest($action);
+		$action = static::shiftPath();
+		if($action && isset(static::$routes[$action]))
+		{
+			$Controller = ucfirst(static::$routes[$action]) . 'RequestHandler';
+			return $Controller::handleRequest();
 		}
+		else
+		{
+			static::autoRouteRequest($action);
+		}		
+
 	}
 }
