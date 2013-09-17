@@ -3,6 +3,7 @@ abstract class RequestHandler
 {
 	
 	public static $responseMode = 'html';
+	public static $injectableData = array();
 	
 	// abstract methods
 	//abstract public static function handleRequest();
@@ -75,22 +76,21 @@ abstract class RequestHandler
 			case 'html':
 				$responseData['responseID'] = $responseID;
 				
-				if(!file_exists($responseID))
-				{
-					throw new Exception($responseID . ' not found.');
-				}
-				
-				if(!is_readable($responseID))
-				{
-					throw new Exception($responseID . ' is not readable.');
-				}
-				
 				$dwoo = new DwooWrapper();
 				
-				echo $dwoo->get($responseID,array(
+				
+				if(!empty(static::$injectableData))
+				{
+					$responseData = array_merge(static::$injectableData, $responseData);
+				}
+				
+				$data = array(
 					'responseID' => $responseID
 					,'data' => 	$responseData
-				));
+				);
+				
+								
+				echo $dwoo->get($responseID,$data);
 				
 				exit;
 				
