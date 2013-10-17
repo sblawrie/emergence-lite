@@ -5,7 +5,9 @@ if(php_sapi_name() == 'cli')
 }
 define('templates_directory',$_SERVER['DOCUMENT_ROOT'].'/Library/Views/');
 define('classes_directory',$_SERVER['DOCUMENT_ROOT'].'/Library/Classes/');
+define('config_directory',$_SERVER['DOCUMENT_ROOT'].'/Library/Config/');
 define('controllers_directory',$_SERVER['DOCUMENT_ROOT'].'/Library/Controllers/');
+define('traits_directory',$_SERVER['DOCUMENT_ROOT'].'/Library/Traits/');
 
 ini_set('error_reporting',E_ALL & ~E_NOTICE & ~E_STRICT);
 ini_set('display_errors',true);
@@ -64,6 +66,17 @@ function bootstrap_class_loader($class)
 		//echo $file; exit;
 	}
 	
+	/* Load Config */
+	$file = config_directory.$fileName.'.config.php';
+	if(is_readable($file))
+	{
+		include_once($file);
+	}
+	else
+	{
+		//echo $file; exit;
+	}
+	
 	// for ActiveRecord
 	if(method_exists($class, '__classLoaded'))
 	{
@@ -73,4 +86,3 @@ function bootstrap_class_loader($class)
 
 spl_autoload_register('bootstrap_class_loader');
 include(classes_directory.'Dwoo/dwooAutoload.php');
-include('Config.php');
