@@ -3,7 +3,7 @@
 class Site
 {
 	// config properties
-	static public $debug = true;
+	static public $debug = false;
 	static public $defaultPage = 'home.php';
 	static public $controlKey = '86b153e60c0e801';	
 	static public $autoCreateSession = true;
@@ -27,10 +27,8 @@ class Site
 	// protected properties
 	static protected $_rootCollections;
 
-	static public $doNotTrack = array(
-		//Enter Your IPs Here
-	);
-	
+	static public $doNotTrack;
+		
 	static public function initialize()
 	{
 		// resolve details from host name
@@ -451,6 +449,10 @@ class Site
 		}
 	
 		if(DB::oneValue("SELECT `id` FROM `webclients` WHERE `webclient`='%s'",$_SERVER['HTTP_USER_AGENT']))
+		{
+			return true;
+		}
+		else if(DB::oneValue("SELECT `ID` FROM `notracking_ips` WHERE `IP`='%s'",$_SERVER['REMOTE_ADDR']))
 		{
 			return true;
 		}

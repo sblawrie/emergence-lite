@@ -47,26 +47,7 @@ class ActiveRecord
      * Field definitions
      * @var array
      */
-    static public $fields = array(
-        /*'ID' => array(
-            'type' => 'integer'
-            ,'autoincrement' => true
-            ,'unsigned' => true
-        )
-        ,'Class' => array(
-            'type' => 'enum'
-            ,'notnull' => true
-            ,'values' => array()
-        )
-        ,'Created' => array(
-            'type' => 'timestamp'
-            ,'default' => 'CURRENT_TIMESTAMP'
-        )
-        ,'CreatorID' => array(
-            'type' => 'integer'
-            ,'notnull' => false
-        )*/
-    );
+    static public $fields = array();
     
     /**
      * Index definitions
@@ -79,13 +60,7 @@ class ActiveRecord
      * Relationship definitions
      * @var array
      */
-    static public $relationships = array(
-        /*'Creator' => array(
-            'type' => 'one-one'
-            ,'class' => 'Person'
-            ,'local' => 'CreatorID'
-        )*/
-    );
+    static public $relationships = array();
     
     /**
      * Map of existing tables
@@ -115,12 +90,15 @@ class ActiveRecord
     // protected members
     protected static $_classFields = array();
     protected static $_classRelationships = array();
+    protected static $_classBeforeSave = array();
+    protected static $_classAfterSave = array();
     
     protected $_record;
     protected $_convertedValues;
     protected $_relatedObjects;
     protected $_isDirty;
     protected $_isPhantom;
+    protected $_wasPhantom;
     protected $_isValid;
     protected $_isNew;
     protected $_isUpdated;
@@ -128,6 +106,9 @@ class ActiveRecord
     protected $_validationErrors;
     protected $_originalValues;
     
+    // callbacks
+    static public $beforeSave;
+    static public $afterSave;
     
     public function getPrimaryKey()
     {
@@ -151,6 +132,8 @@ class ActiveRecord
         
         static::_defineRelationships();
         static::_initRelationships();
+        
+        static::_defineEvents();
     }
     
     function __construct($record = array(), $isDirty = false, $isPhantom = null)
@@ -158,6 +141,7 @@ class ActiveRecord
         $this->_record = static::_convertRecord($record);
         $this->_relatedObjects = array();
         $this->_isPhantom = isset($isPhantom) ? $isPhantom : empty($record);
+        $this->_wasPhantom = $this->_isPhantom;
         $this->_isDirty = $this->_isPhantom || $isDirty;
         $this->_isNew = false;
         $this->_isUpdated = false;
@@ -499,22 +483,15 @@ class ActiveRecord
     
     public function save($deep = true)
     {
-        // set creator
-        /*if(static::_fieldExists('CreatorID') && !$this->CreatorID && $_SESSION['User'])
-        {
-            $this->CreatorID = $_SESSION['User']->ID;
-        }*/
-        if(static::_fieldExists('CreatorID') && !$this->CreatorID && (SiteRequestHandler::$Session || Admin\AdminRequestHandler::$User))
-        {
-        	if(Admin\AdminRequestHandler::$User['CDEWorldUID'])
-        	{
-	        	$this->CreatorID = Admin\AdminRequestHandler::$User['CDEWorldUID'];
-	        }
-	        else
-	        {
-		        $this->CreatorID = SiteRequestHandler::$Session->CreatorID;
-	        }
-        }
+    
+    	// run before save
+		foreach(static::$_classBeforeSave as $beforeSave)
+		{
+    		if(is_callable($beforeSave))
+    		{
+	    		$beforeSave($this);
+    		}
+		}
         
         
         // set created
@@ -588,6 +565,15 @@ class ActiveRecord
             // update state
             $this->_isDirty = false;
         }
+        
+        // run after save
+    	foreach(static::$_classAfterSave as $afterSave)
+		{
+    		if(is_callable($afterSave))
+    		{
+	    		$afterSave($this);
+    		}
+		}
         
         // traverse relationships again
         if($deep)
@@ -1060,52 +1046,46 @@ class ActiveRecord
     
     // protected methods
     
+    static protected function _defineEvents()
+    {
+	    // run before save
+    	$className = get_called_class();
+    	
+    	// merge fields from first ancestor up
+        $classes = class_parents($className);
+        array_unshift($classes, $className);
+    
+        while($class = array_pop($classes))
+        {
+	        if(is_callable($class::$beforeSave))
+	        {
+	        	if(!empty($class::$beforeSave))
+	        	{
+	        		if(!in_array($class::$beforeSave,static::$_classBeforeSave))
+	        		{
+	        			static::$_classBeforeSave[] = $class::$beforeSave;
+	        		}
+	        	}
+	        }
+	        
+	        if(is_callable($class::$afterSave))
+	        {
+	        	if(!empty($class::$afterSave))
+	        	{
+	        		if(!in_array($class::$afterSave,static::$_classAfterSave))
+	        		{
+		        		static::$_classAfterSave[] = $class::$afterSave;
+		        	}
+		        }
+	        }
+	    }
+    }
+    
     /**
      * Called when a class is loaded to define fields before _initFields
      */
     static protected function _defineFields()
     {
-    	//Gets fields from table on the fly
-    	$tableName = static::$tableName;
-	$sql = "SELECT `COLUMN_NAME`, `DATA_TYPE`, `COLUMN_KEY`, `EXTRA`
-			FROM `INFORMATION_SCHEMA`.`COLUMNS` 
-			WHERE `TABLE_SCHEMA`=(SELECT DATABASE()) 
-			AND `TABLE_NAME`='{$tableName}';";
-	$Columns = DB::allRecords($sql);
-	
-	$fields = array();
-	foreach($Columns as $Column)
-	{
-		$field_array = array();
-		if($Column['COLUMN_KEY']=='PRI' && $Column['COLUMN_NAME']!='ID')
-		{
-			static::$primaryKey = $Column['COLUMN_NAME'];
-		}
-		
-		$Map = array('varchar'=>'string', 'mediumtext'=>'string', 'text'=>'string', 'largetext'=>'text', 'int'=>'integer', 'date'=>'timestamp', 'datetime'=>'timestamp', 'float'=>'decimal', 'tinyint'=>'integer');
-		$type = (isset($Map[$Column['DATA_TYPE']]))?$Map[$Column['DATA_TYPE']]:$Column['DATA_TYPE'];
-		if($type=='string')
-		{
-			$fields[] = $Column['COLUMN_NAME'];
-		}
-		else
-		{
-	
-		        $field_array['type'] = $type;
-		  
-		        if($Column['EXTRA']=='auto_increment')
-		        {
-			        $field_array['autoincrement'] = true;
-		        }
-		        
-		        $fields[$Column['COLUMN_NAME']] = $field_array;
-		}
-		
-	}
-	
-	//merge fields from table with user-defined fields
-	static::$fields = array_merge($fields, static::$fields);
-		
         $className = get_called_class();
 
         // skip if fields already defined
@@ -1585,13 +1565,7 @@ class ActiveRecord
      * @return mixed value
      */
     protected function _setFieldValue($field, $value)
-    {
-        // ignore overwriting meta fields
-        if(in_array($field, array('Created','CreatorID')) && $this->_getFieldValue($field, false) !== null)
-        {
-            return false;
-        }
-        
+    {   
         if(!static::_fieldExists($field))
         {
             // set relationship
