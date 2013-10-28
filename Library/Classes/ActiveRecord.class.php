@@ -127,6 +127,7 @@ class ActiveRecord
      */
     static function __classLoaded()
     {
+    	static::_defineFieldsFromTable();
         static::_defineFields();
         static::_initFields();
         
@@ -2150,5 +2151,55 @@ class ActiveRecord
         else {
             return DB::handleError($query, $queryLog, $parameters);   
         }
+    }
+    
+    static public function _defineFieldsFromTable()
+    {	
+    	$className = get_called_class();
+    
+	    //Gets fields from table on the fly
+    	$tableName = static::$tableName;
+		$sql = "SELECT `COLUMN_NAME`, `DATA_TYPE`, `COLUMN_KEY`, `EXTRA`
+				FROM `INFORMATION_SCHEMA`.`COLUMNS` 
+				WHERE `TABLE_SCHEMA`=(SELECT DATABASE()) 
+				AND `TABLE_NAME`='{$tableName}';";
+		$Columns = DB::allRecords($sql);
+    
+		$fields = array();
+		
+		$Map = array('varchar'=>'string', 'mediumtext'=>'string', 'text'=>'string', 'largetext'=>'string', 'int'=>'integer', 'date'=>'timestamp', 'datetime'=>'timestamp', 'float'=>'decimal', 'tinyint'=>'integer', 'enum'=>'enum');
+		
+		foreach($Columns as $Column)
+		{
+			$field_array = array();
+			if($Column['COLUMN_KEY']=='PRI' && $Column['COLUMN_NAME']!='ID')
+			{
+				static::$primaryKey = $Column['COLUMN_NAME'];
+			}
+			
+			
+			$type = (isset($Map[$Column['DATA_TYPE']]))?$Map[$Column['DATA_TYPE']]:$Column['DATA_TYPE'];
+			if($type=='string')
+			{
+				$fields[] = $Column['COLUMN_NAME'];
+			}
+			else
+			{
+
+		        $field_array['type'] = $type;
+		  
+		        if($Column['EXTRA']=='auto_increment')
+		        {
+			        $field_array['autoincrement'] = true;
+		        }
+		        
+		        $fields[$Column['COLUMN_NAME']] = $field_array;
+			}
+			
+		}
+		
+		//merge fields from table with user-defined fields
+		static::$fields = array_merge($fields, static::$fields);
+				
     }
 }
